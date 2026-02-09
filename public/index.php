@@ -1,0 +1,74 @@
+<?php
+
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
+$envFile = dirname(__DIR__) . '/.env';
+
+if (!file_exists($envFile)) {
+    die('.env file not found at project root');
+}
+
+$lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+
+foreach ($lines as $line) {
+    $line = trim($line);
+
+    if ($line === '' || $line[0] === '#') {
+        continue;
+    }
+
+    [$key, $value] = explode('=', $line, 2);
+    $_ENV[trim($key)] = trim($value);
+}
+
+// Load .env
+// $envPath = dirname(__DIR__) . '/.env';
+// if (file_exists($envPath)) {
+//     $lines = file($envPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+//     foreach ($lines as $line) {
+//         if (str_starts_with(trim($line), '#')) continue;
+//         [$key, $value] = explode('=', $line, 2);
+//         $_ENV[$key] = trim($value);
+//     }
+// }
+
+// $envPath = dirname(__DIR__) . '/.env';
+
+// if (!file_exists($envPath)) {
+//     die('.env file not found');
+// }
+
+// $lines = file($envPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+
+// foreach ($lines as $line) {
+//     if (str_starts_with(trim($line), '#')) continue;
+
+//     [$key, $value] = array_map('trim', explode('=', $line, 2));
+//     $_ENV[$key] = $value;
+// }
+
+
+require_once '../config/config.php';
+require_once '../app/core/Router.php';
+require_once '../app/middleware/JsonMiddleware.php';
+require_once '../app/middleware/AuthMiddleware.php';
+require_once '../app/controllers/AuthController.php';
+require_once '../app/controllers/PatientController.php';
+
+// Run JSON middleware globally
+$request = JsonMiddleware::handle();
+
+$router = new Router($request);
+
+// Public routes
+$router->post('/api/register', [AuthController::class, 'register']);
+$router->post('/api/login', [AuthController::class, 'login']);
+
+// Protected routes
+$router->get('/api/patients', [PatientController::class, 'index'], true);
+$router->post('/api/patients', [PatientController::class, 'store'], true);
+$router->put('/api/patients/{id}', [PatientController::class, 'update'], true);
+$router->delete('/api/patients/{id}', [PatientController::class, 'destroy'], true);
+
+$router->dispatch();
