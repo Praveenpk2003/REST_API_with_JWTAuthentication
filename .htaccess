@@ -1,4 +1,7 @@
 RewriteEngine On
+RewriteCond %{HTTP:Authorization} .
+RewriteRule ^ - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
 
 # Send everything that is not a real file or directory to public/index.php
 RewriteCond %{REQUEST_FILENAME} !-f

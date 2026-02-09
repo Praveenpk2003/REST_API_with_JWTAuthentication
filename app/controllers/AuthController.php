@@ -1,7 +1,9 @@
 <?php
 
+
 require_once '../app/models/User.php';
 require_once '../app/helpers/JWT.php';
+require_once '../app/helpers/Response.php';
 
 class AuthController
 {
@@ -10,13 +12,15 @@ class AuthController
         $data = $GLOBALS['request']['body'] ?? [];
 
         if (!isset($data['email'], $data['password'], $data['name'])) {
-            http_response_code(422);
-            echo json_encode(['error'=>'Missing fields']);
-            return;
+            Response::error('Missing fields', 422);
+        }
+
+        if (User::findByEmail($data['email'])) {
+            Response::error('Email already exists', 400);
         }
 
         User::create($data);
-        echo json_encode(['message'=>'User registered']);
+        Response::success('User registered', null, 201);
     }
 
     public function login()
@@ -25,9 +29,7 @@ class AuthController
         $user = User::findByEmail($data['email']);
 
         if (!$user || !password_verify($data['password'], $user['password'])) {
-            http_response_code(401);
-            echo json_encode(['error'=>'Invalid credentials']);
-            return;
+            Response::error('Invalid credentials', 401);
         }
 
         $payload = [
@@ -37,6 +39,6 @@ class AuthController
             'exp'=>time()+env('JWT_EXPIRY')
         ];
 
-        echo json_encode(['token'=>JWT::generate($payload)]);
+        Response::json(['token'=>JWT::generate($payload)]);
     }
 }
